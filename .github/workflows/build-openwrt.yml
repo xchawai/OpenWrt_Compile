@@ -36,8 +36,7 @@ jobs:
 
     - name: Load Configuration
       run: |
-        # 创建OpenWrt工作目录并复制配置文件
-        mkdir openwrt
+        # 复制配置文件
         cp .config openwrt/
         # 加载OpenWrt配置并获取目标架构
         source openwrt/.config
