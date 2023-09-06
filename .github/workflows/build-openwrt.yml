@@ -26,9 +26,6 @@ jobs:
         file wget
         # 设置时区为上海
         sudo timedatectl set-timezone Asia/Shanghai
-        # 创建OpenWrt工作目录并复制配置文件
-        mkdir openwrt
-        cp .config openwrt/
       shell: bash
 
     - name: Clone OpenWrt Repository
@@ -39,6 +36,9 @@ jobs:
 
     - name: Load Configuration
       run: |
+        # 创建OpenWrt工作目录并复制配置文件
+        mkdir openwrt
+        cp .config openwrt/
         # 加载OpenWrt配置并获取目标架构
         source openwrt/.config
         TARGET_BOARD=$(grep '^CONFIG_TARGET_BOARD' openwrt/.config | cut -d'=' -f2 | tr -d '"')
