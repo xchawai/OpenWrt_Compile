@@ -2,30 +2,29 @@ name: Build and Release OpenWrt
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches:
-  #     - main
 
+env:
+  OPENWRT_REPO: "https://github.com/openwrt/openwrt.git"  # OpenWrt仓库地址
+  OPENWRT_BRANCH: "openwrt-21.02"  # OpenWrt分支
+  TIMEZONE: "Asia/Shanghai"
+  
 jobs:
   build:
     runs-on: ubuntu-latest
 
-    env:
-      OPENWRT_BRANCH: "openwrt-22.03"  # 指定OpenWrt分支
-
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
-    - name: Setup Build Environment and Create Working Directory
+    - name: Setup Build Environment
       run: |
         # 更新系统和安装必要的依赖
         sudo apt update
         sudo apt install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
         gettext git libncurses-dev libssl-dev python3-distutils rsync unzip zlib1g-dev \
         file wget
-        # 设置时区为上海
-        sudo timedatectl set-timezone Asia/Shanghai
+        # 设置时区
+        sudo timedatectl set-timezone $TIMEZONE
       shell: bash
 
     - name: Clone OpenWrt Repository
@@ -39,8 +38,8 @@ jobs:
         # 复制配置文件
         cp .config openwrt/
         # 加载OpenWrt配置并获取目标架构
-        TARGET_BOARD=$(grep '^CONFIG_TARGET_BOARD=' openwrt/.config | sed 's/^CONFIG_TARGET_BOARD=//')
-        TARGET_SUBTARGET=$(grep '^CONFIG_TARGET_SUBTARGET=' openwrt/.config | sed 's/^CONFIG_TARGET_SUBTARGET=//')
+        TARGET_BOARD=$(grep '^CONFIG_TARGET_BOARD=' openwrt/.config | sed 's/^CONFIG_TARGET_BOARD="//;s/"$//')
+        TARGET_SUBTARGET=$(grep '^CONFIG_TARGET_SUBTARGET=' openwrt/.config | sed 's/^CONFIG_TARGET_SUBTARGET="//;s/"$//')
         FIRMWARE_DIR=openwrt/bin/targets/$TARGET_BOARD/$TARGET_SUBTARGET
         echo "FIRMWARE_DIR=$FIRMWARE_DIR" >> $GITHUB_ENV
       shell: bash
@@ -72,6 +71,8 @@ jobs:
       run: |
         # 运行修改脚本
         if [ -f modification.sh ]; then
+          cp modification.sh openwrt/
+          cd openwrt
           chmod +x modification.sh
           ./modification.sh
         fi
@@ -85,18 +86,21 @@ jobs:
         make -j$(nproc) || exit 1
         make package/index
       continue-on-error: true
-
+    
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
       with:
         name: openwrt-artifacts
         path: ${{ env.FIRMWARE_DIR }}
+        exclude: |
+            ${{ env.FIRMWARE_DIR }}/packages
 
     - name: Create Release
+      if: success()
       run: |
         # 创建GitHub Release
         DATE=$(date +%Y.%m.%d)
         RELEASE_NAME="OpenWrt $OPENWRT_BRANCH $DATE"
-        gh release create "$RELEASE_NAME" ${{ env.FIRMWARE_DIR }}/*
+        gh release create "$RELEASE_NAME" ${{ env.FIRMWARE_DIR }}/* --exclude "packages/*"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
