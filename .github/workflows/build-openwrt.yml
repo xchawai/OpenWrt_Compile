@@ -39,9 +39,8 @@ jobs:
         # 复制配置文件
         cp .config openwrt/
         # 加载OpenWrt配置并获取目标架构
-        source openwrt/.config
-        TARGET_BOARD=$(grep '^CONFIG_TARGET_BOARD' openwrt/.config | cut -d'=' -f2 | tr -d '"')
-        TARGET_SUBTARGET=$(grep '^CONFIG_TARGET_SUBTARGET' openwrt/.config | cut -d'=' -f2 | tr -d '"')
+        TARGET_BOARD=$(grep '^CONFIG_TARGET_BOARD=' openwrt/.config | sed 's/^CONFIG_TARGET_BOARD=//')
+        TARGET_SUBTARGET=$(grep '^CONFIG_TARGET_SUBTARGET=' openwrt/.config | sed 's/^CONFIG_TARGET_SUBTARGET=//')
         FIRMWARE_DIR=openwrt/bin/targets/$TARGET_BOARD/$TARGET_SUBTARGET
         echo "FIRMWARE_DIR=$FIRMWARE_DIR" >> $GITHUB_ENV
       shell: bash
