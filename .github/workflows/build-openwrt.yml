@@ -5,7 +5,7 @@ on:
 
 env:
   OPENWRT_REPO: "https://github.com/openwrt/openwrt.git"  # OpenWrt仓库地址
-  OPENWRT_BRANCH: "openwrt-21.02"  # OpenWrt分支
+  OPENWRT_BRANCH: "openwrt-22.03"  # OpenWrt分支
   TIMEZONE: "Asia/Shanghai"
   
 jobs:
