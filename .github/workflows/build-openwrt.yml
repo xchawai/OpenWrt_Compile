@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      OPENWRT_BRANCH: "openwrt-21.02"  # 指定OpenWrt分支
+      OPENWRT_BRANCH: "openwrt-22.03"  # 指定OpenWrt分支
 
     steps:
     - name: Checkout Repository
