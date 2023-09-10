@@ -30,7 +30,7 @@ jobs:
     - name: Clone OpenWrt Repository
       run: |
         # 克隆OpenWrt源码
-        git clone https://github.com/openwrt/openwrt.git openwrt
+        git clone ${{ env.OPENWRT_REPO }} openwrt
       shell: bash
 
     - name: Load Configuration
@@ -88,12 +88,13 @@ jobs:
       continue-on-error: true
     
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: openwrt-artifacts
-        path: ${{ env.FIRMWARE_DIR }}
-        exclude: |
-            ${{ env.FIRMWARE_DIR }}/packages
+        path: |
+          ${{ env.FIRMWARE_DIR }}
+          !${{ env.FIRMWARE_DIR }}/packages
+        
 
     - name: Create Release
       if: success()
@@ -101,6 +102,18 @@ jobs:
         # 创建GitHub Release
         DATE=$(date +%Y.%m.%d)
         RELEASE_NAME="OpenWrt $OPENWRT_BRANCH $DATE"
-        gh release create "$RELEASE_NAME" ${{ env.FIRMWARE_DIR }}/* --exclude "packages/*"
+        # 创建 Release
+        UPLOAD_RELEASE = true
+        gh release create "$RELEASE_NAME" $FIRMWARE_DIR/* --title "$RELEASE_NAME" || UPLOAD_RELEASE = false
+        echo "UPLOAD_RELEASE=$UPLOAD_RELEASE" >> $GITHUB_ENV
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Remove old Releases
+      uses: dev-drprasad/delete-older-releases@v0.2
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      with:
+        keep_latest: 5
+        delete_tags: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
